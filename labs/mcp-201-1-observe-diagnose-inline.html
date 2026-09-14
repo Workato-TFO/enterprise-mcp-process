@@ -2437,6 +2437,7 @@ html.nav-collapsed .shell{grid-template-columns:1fr;}
 .measurement-task-panel article.task-measurement .task-title,.measurement-task-panel article.task-measurement .task-id{font-size:24px;}
 .measurement-task-panel article.task-measurement .task-hook{font-size:17px;line-height:1.55;}
 .measurement-run-nav{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin:8px 0 28px;padding-top:16px;border-top:1px solid var(--rule);}.measurement-run-nav button{justify-self:start;padding:8px 11px;border:1px solid var(--rule);border-radius:6px;background:var(--paper);color:var(--ac-violet-300);font-family:var(--font-label);font-size:11px;font-weight:700;cursor:pointer;}.measurement-run-nav button:last-child{justify-self:end;}.measurement-run-nav button:hover:not(:disabled){border-color:var(--ac-violet-300);background:var(--ac-violet-50,#EEE6FF);}.measurement-run-nav button:disabled{visibility:hidden;}.measurement-run-nav span{color:var(--muted);font-family:var(--font-label);font-size:11px;letter-spacing:.04em;}
+.measurement-record-footer{padding:16px;border:1px solid var(--rule);border-radius:12px;background:color-mix(in srgb,var(--accent-soft) 35%,var(--paper));}.measurement-record-footer:empty{display:none;}
 .measurement-phase-pointer{margin:-12px 0 24px;padding:10px 14px;border:1px solid var(--rule);border-radius:8px;background:var(--accent-soft);color:var(--muted);font-size:13px;}.measurement-phase-pointer a{color:var(--ac-violet-300);font-family:var(--font-label);font-weight:700;}
 .measurement-question-panel{padding:16px;border-top:1px solid var(--rule);background:color-mix(in srgb,var(--accent-soft) 35%,var(--paper));}.measurement-console-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(220px,.65fr);gap:12px;}.measurement-stage{min-width:0;padding:13px;border:1px solid var(--rule);border-radius:9px;background:var(--paper);}.measurement-stage--record{grid-column:1/-1;}.measurement-stage-label{margin:0 0 10px;color:var(--ac-violet-300);font-family:var(--font-label);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;}.measurement-question{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}.measurement-question p{margin:0;font-family:var(--font-display);font-size:17px;line-height:1.35;}.measurement-stage--watch{background:color-mix(in srgb,var(--ac-violet-50,#EEE6FF) 45%,var(--paper));}.measurement-stage--watch .measurement-watch{padding:0;border:0;background:transparent;color:var(--ink-2);font-size:13px;}.measurement-copy{flex:none;padding:7px 10px;border:1px solid var(--ac-violet-300);border-radius:5px;background:transparent;color:var(--ac-violet-300);font-family:var(--font-label);font-size:11px;font-weight:700;letter-spacing:.04em;cursor:pointer;}
 .measurement-setup{margin:10px 0 0;padding-top:9px;border-top:1px dashed var(--rule);color:var(--ink-2);font-family:var(--font-label);font-size:11px;font-weight:700;letter-spacing:.025em;line-height:1.45;}
@@ -3570,6 +3571,8 @@ details.reveal > .reveal-body > :first-child { margin-top: 12px; }
       var panel = root.querySelector('.measurement-question-panel');
       var viewport = root.querySelector('.measurement-workbook-viewport');
       var taskPanels = root.querySelectorAll('[data-measurement-task-question]');
+      // Present only when the run detail sits between the console and the record.
+      var recordFooter = root.querySelector('.measurement-record-footer');
       var saveState = root.querySelector('.measurement-save-state');
       var progressText = root.querySelector('.measurement-progress');
       var fieldOrder = workbookFieldOrder(spec, baseline ? 'baseline' : 'comparison');
@@ -3975,21 +3978,25 @@ details.reveal > .reveal-body > :first-child { margin-top: 12px; }
       }
       function renderPanel() {
         panel.innerHTML = '';
+        if (recordFooter) recordFooter.innerHTML = '';
         var question = spec.questions[active], record = row(question), raw = record.raw || {}, enhanced = record.enhanced || {};
         taskPanels.forEach(function (taskPanel) {
           taskPanel.hidden = taskPanel.dataset.measurementTaskQuestion !== question.id;
         });
         var consoleGrid = document.createElement('div'); consoleGrid.className = 'measurement-console-grid';
-        function stage(number, label, className) {
+        // The verbs carry the order on their own. Numbering them read as a
+        // three-step procedure the learner had to complete in the console, which
+        // is wrong once Record moved below the run detail.
+        function stage(label, className, host) {
           var wrap = document.createElement('section');
           wrap.className = 'measurement-stage ' + className;
           var heading = document.createElement('h5'); heading.className = 'measurement-stage-label';
-          heading.textContent = number + ' · ' + label;
+          heading.textContent = label;
           var body = document.createElement('div'); body.className = 'measurement-stage-body';
-          wrap.appendChild(heading); wrap.appendChild(body); consoleGrid.appendChild(wrap);
+          wrap.appendChild(heading); wrap.appendChild(body); (host || consoleGrid).appendChild(wrap);
           return body;
         }
-        var askBody = stage('1', 'Ask', 'measurement-stage--ask');
+        var askBody = stage('Ask', 'measurement-stage--ask');
         var questionHead = document.createElement('div'); questionHead.className = 'measurement-question';
         var wording = record.question || question.wording;
         var questionText = document.createElement('p'); questionText.textContent = wording;
@@ -4012,7 +4019,7 @@ details.reveal > .reveal-body > :first-child { margin-top: 12px; }
         // One line of what to look for, in front of the learner while they run
         // rather than in a callout they read four tasks ago. Deliberately short:
         // the teaching lives in the task's asides, and this is the reminder.
-        var watchBody = stage('2', 'Watch', 'measurement-stage--watch');
+        var watchBody = stage('Watch', 'measurement-stage--watch');
         if (question.watch) {
           var watch = document.createElement('p');
           watch.className = 'measurement-watch';
@@ -4024,7 +4031,11 @@ details.reveal > .reveal-body > :first-child { margin-top: 12px; }
           watchFallback.textContent = 'Keep the first result. Watch what the tools actually did, not only what the final answer says.';
           watchBody.appendChild(watchFallback);
         }
-        var recordBody = stage('3', 'Record', 'measurement-stage--record');
+        // The reading is taken after the run, so the fields belong after the run
+        // detail and its previous/next controls rather than above them. Without a
+        // task deck there is nothing in between, and Record stays the last region
+        // of the console.
+        var recordBody = stage('Record', 'measurement-stage--record', recordFooter);
         if (baseline) {
           var form = document.createElement('div'); form.className = 'measurement-entry';
           // Units live in the placeholders, not the labels: at a third of the row
@@ -4777,6 +4788,7 @@ details.reveal > .reveal-body > :first-child { margin-top: 12px; }
             <button type="button" data-measurement-run-index="4" disabled>Next run →</button>
           </nav>
         </section></div>
+      <div class="measurement-record-footer" aria-label="Record this run"></div>
     </section>
           
           <div class="phase-tasks"></div>
