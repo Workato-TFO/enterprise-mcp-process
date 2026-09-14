@@ -30,8 +30,24 @@ scan "github token"          'gh[pousr]_[A-Za-z0-9]{20,}'
 scan "slack token"           'xox[abpr]-[A-Za-z0-9-]{10,}'
 scan "live workato mcp token" 'wkt_token=[A-Za-z0-9_-]{10,}'
 
-# Inclusive language (trainer ruling 2026-07-09)
-scan "non-inclusive: hands-on" '[Hh]ands[- ]on'
+# Inclusive language (trainer ruling 2026-07-09).
+#
+# EXEMPTION (trainer, 2026-09-14): the shared semantic layout catalog
+# workato-training-semantic-layouts@1 names one of its classes
+# "hands-on-activity", and the renderer stamps that token onto every task
+# element as a class and a data attribute. It is generated markup, not
+# language anyone reads, so it is exempt. Prose is not exempt: "hands on"
+# with a space, or any other form a learner could read, still fails. The
+# exemption is deliberately the exact generated token and nothing wider.
+if git grep -I -n -E '[Hh]ands[- ]on' -- . ':!scripts/publish-checks.sh' \
+   | grep -v -E 'semantic-layout--hands-on-activity|data-semantic-class="hands-on-activity"' \
+   >/tmp/publish-check-hits 2>/dev/null; then
+  echo "FAIL [non-inclusive: hands-on]"
+  head -10 /tmp/publish-check-hits
+  fail=1
+else
+  echo "ok   [non-inclusive: hands-on]  (catalog class token exempt)"
+fi
 
 # Internal surfaces
 scan "internal repo pointer" 'static-web|Workato-TFO/bakery|PUBLISHING\.md'
