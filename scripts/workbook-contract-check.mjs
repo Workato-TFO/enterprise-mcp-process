@@ -123,11 +123,11 @@ function lab1Issues(spec, html, workbookHtml) {
   if (!sameList(spec.questions?.map(({ label }) => label), LAB1_LABELS)) {
     issues.push("sequential learner-facing labels");
   }
-  if (!Array.isArray(spec.starters) || spec.starters.length !== 3 ||
-      !spec.starters.some((starter) => starter.includes("current status")) ||
-      !spec.starters.some((starter) => starter.includes("our CEO")) ||
-      !spec.starters.some((starter) => starter.includes("BAD-999"))) {
-    issues.push("P3, P6, and P11 transfer starters");
+  // The starter pool was rebuilt 2026-09-14 and deliberately no longer maps to
+  // fixed prompt wording, so pin the contract rather than the contents: the
+  // transfer tab offers a pool the learner can preview.
+  if (!Array.isArray(spec.starters) || spec.starters.length < 3) {
+    issues.push("transfer starter pool");
   }
   if (!workbookHtml.includes("measurement-workbook--task-panels") ||
       !workbookHtml.includes("measurement-task-deck") ||
@@ -233,7 +233,7 @@ passed = report("Lab 1 known-bad self-check", [
   "Lab 1 four-field measurement model",
   "task-panel mode",
   "three fixed rows plus one transfer row",
-  "P3, P6, and P11 transfer starters",
+  "transfer starter pool",
   "sequential learner-facing labels",
 ].every((issue) => caughtLab1.includes(issue)) ? [] : ["guard did not catch regression"]) && passed;
 
