@@ -4,7 +4,7 @@ Customer-facing lab guides for Enterprise MCP 201: Process MCP Principles.
 
 ## Published site
 
-<https://workato-tfo.github.io/mcp-process/>
+<https://workato-tfo.github.io/enterprise-mcp-process/>
 
 ## Contents
 
